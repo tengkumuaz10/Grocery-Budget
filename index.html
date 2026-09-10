@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Grocery Budget">
+  <title>Grocery Budget by tmsz</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="./icon-192.png" alt="" class="brand-icon">
+        <div>
+          <h1>Grocery Budget</h1>
+          <p>by tmsz</p>
+        </div>
+      </div>
+      <button id="newTripBtnTop" class="btn btn-primary">+ New Trip</button>
+    </header>
+
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab is-active" data-tab="current">Current Trip</button>
+      <button class="tab" data-tab="history">History</button>
+    </nav>
+
+    <main>
+      <section id="currentPanel" class="panel">
+        <div class="trip-meta card">
+          <div class="field">
+            <label for="storeInput">Store</label>
+            <input id="storeInput" type="text" placeholder="e.g. MYDIN">
+          </div>
+          <div class="field">
+            <label for="tripDateInput">Trip Date</label>
+            <input id="tripDateInput" type="date">
+          </div>
+        </div>
+
+        <section class="summary-grid">
+          <article class="summary-card">
+            <span>Total Budget</span>
+            <strong id="totalBudget">RM0.00</strong>
+          </article>
+          <article class="summary-card">
+            <span>Total Spent</span>
+            <strong id="totalSpent">RM0.00</strong>
+          </article>
+          <article class="summary-card">
+            <span>Remaining</span>
+            <strong id="remaining">RM0.00</strong>
+            <small id="budgetStatus"></small>
+          </article>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Payment Sources</h2>
+              <p>Add the cards, accounts or cash that make up your grocery budget.</p>
+            </div>
+            <button id="addSourceBtn" class="btn btn-soft">+ Add</button>
+          </div>
+          <div id="paymentSources" class="source-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Shopping List</h2>
+              <p>Name, quantity, price and subtotal.</p>
+            </div>
+            <div class="section-actions">
+              <button id="pasteListBtn" class="btn btn-outline">Paste List</button>
+              <button id="addItemBtn" class="btn btn-primary">+ Item</button>
+            </div>
+          </div>
+
+          <div class="list-progress">
+            <span id="itemProgress">0 / 0 items priced</span>
+            <button id="sortUnpricedBtn" class="text-btn">Unpriced first</button>
+          </div>
+
+          <div class="item-table-wrap">
+            <div class="item-header">
+              <span>Item</span>
+              <span>Qty</span>
+              <span>Price</span>
+              <span>Subtotal</span>
+              <span></span>
+            </div>
+            <div id="shoppingItems"></div>
+          </div>
+
+          <div id="emptyItems" class="empty-state">
+            No items yet. Add an item or paste your whole Notes list.
+          </div>
+
+          <div class="trip-actions">
+            <button id="finishTripBtn" class="btn btn-primary btn-wide">Finish Trip</button>
+          </div>
+        </section>
+      </section>
+
+      <section id="historyPanel" class="panel hidden">
+        <div class="history-head">
+          <div>
+            <h2>Shopping History</h2>
+            <p>Your completed trips are saved on this device.</p>
+          </div>
+          <button id="newTripBtnHistory" class="btn btn-primary">+ New Trip</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+        <div id="emptyHistory" class="empty-state card">No completed trips yet.</div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Payment source modal -->
+  <dialog id="sourceDialog" class="dialog">
+    <form method="dialog" id="sourceForm" class="dialog-card">
+      <div class="dialog-head">
+        <h3 id="sourceDialogTitle">Add Payment Source</h3>
+        <button type="button" class="icon-btn" data-close-dialog="sourceDialog">×</button>
+      </div>
+      <input type="hidden" id="sourceId">
+      <div class="field">
+        <label for="sourceName">Name</label>
+        <input id="sourceName" type="text" placeholder="e.g. Maybank, Cash" required>
+      </div>
+      <div class="field">
+        <label for="sourceBudget">Budget (RM)</label>
+        <input id="sourceBudget" type="number" min="0" step="0.01" inputmode="decimal" required>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-outline" data-close-dialog="sourceDialog">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Paste list modal -->
+  <dialog id="pasteDialog" class="dialog">
+    <form method="dialog" id="pasteForm" class="dialog-card dialog-large">
+      <div class="dialog-head">
+        <div>
+          <h3>Paste List</h3>
+          <p>Copy your whole list from Notes and paste it here.</p>
+        </div>
+        <button type="button" class="icon-btn" data-close-dialog="pasteDialog">×</button>
+      </div>
+      <textarea id="pasteText" rows="12" placeholder="Example:
+tissue dapur 10.99
+beras - 5kg
+sos tiram - 1 botol 6.90
+bihun - 2 pack
+minyak masak 28.89"></textarea>
+      <div class="paste-note">
+        Decimal numbers at the end are treated as prices. Quantities are detected for count units such as pack, pkt, botol, pcs, unit, tin and can.
+      </div>
+      <div id="pastePreview" class="paste-preview hidden"></div>
+      <div class="dialog-actions">
+        <button type="button" id="previewPasteBtn" class="btn btn-outline">Preview</button>
+        <button type="submit" class="btn btn-primary">Import Items</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- New trip modal -->
+  <dialog id="newTripDialog" class="dialog">
+    <div class="dialog-card">
+      <div class="dialog-head">
+        <div>
+          <h3>Start New Trip</h3>
+          <p>Your completed history will not be deleted.</p>
+        </div>
+        <button type="button" class="icon-btn" data-close-dialog="newTripDialog">×</button>
+      </div>
+      <div class="choice-list">
+        <button id="startEmptyBtn" class="choice">
+          <strong>Start Empty</strong>
+          <span>New blank shopping list. Payment sources stay the same.</span>
+        </button>
+        <button id="copyPreviousBtn" class="choice">
+          <strong>Copy Previous List</strong>
+          <span>Copy item names and quantity from your latest trip, with prices cleared.</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Finish confirmation -->
+  <dialog id="finishDialog" class="dialog">
+    <div class="dialog-card">
+      <div class="dialog-head">
+        <h3>Finish this trip?</h3>
+        <button type="button" class="icon-btn" data-close-dialog="finishDialog">×</button>
+      </div>
+      <div id="finishSummary" class="finish-summary"></div>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" data-close-dialog="finishDialog">Cancel</button>
+        <button id="confirmFinishBtn" class="btn btn-primary">Finish & Save</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- History detail/edit modal -->
+  <dialog id="historyDialog" class="dialog">
+    <div class="dialog-card dialog-large">
+      <div class="dialog-head">
+        <div>
+          <h3 id="historyDialogTitle">Trip Details</h3>
+          <p id="historyDialogSubtitle"></p>
+        </div>
+        <button type="button" class="icon-btn" data-close-dialog="historyDialog">×</button>
+      </div>
+      <div id="historyDetailBody"></div>
+      <div class="dialog-actions">
+        <button id="historyPrintBtn" class="btn btn-outline">Print</button>
+        <button id="historyEditBtn" class="btn btn-primary">Edit</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
